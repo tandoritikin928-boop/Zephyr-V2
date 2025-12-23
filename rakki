@@ -1,0 +1,83 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- 設定
+local GodMode = false
+local DesiredHP = 100
+
+-- ===== UI =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "HP_UI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromScale(0.26, 0.28)
+frame.Position = UDim2.fromScale(0.05, 0.6)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+
+-- HP入力
+local hpBox = Instance.new("TextBox", frame)
+hpBox.Size = UDim2.fromScale(0.8,0.25)
+hpBox.Position = UDim2.fromScale(0.1,0.05)
+hpBox.PlaceholderText = "HP入力"
+hpBox.Text = ""
+
+local hpButton = Instance.new("TextButton", frame)
+hpButton.Size = UDim2.fromScale(0.5,0.2)
+hpButton.Position = UDim2.fromScale(0.25,0.35)
+hpButton.Text = "適用"
+
+-- God Mode トグル
+local godToggle = Instance.new("TextButton", frame)
+godToggle.Size = UDim2.fromScale(0.85,0.2)
+godToggle.Position = UDim2.fromScale(0.075,0.65)
+godToggle.Text = "God Mode : OFF"
+
+-- UI最小化ボタン
+local minBtn = Instance.new("TextButton", frame)
+minBtn.Size = UDim2.fromScale(0.15,0.15)
+minBtn.Position = UDim2.fromScale(0.825,0)
+minBtn.Text = "_"
+minBtn.TextScaled = true
+
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    frame.Size = minimized and UDim2.fromScale(0.05,0.05) or UDim2.fromScale(0.26,0.28)
+end)
+
+-- ===== ロジック =====
+local hum
+local function bindChar(char)
+    hum = char:WaitForChild("Humanoid")
+    hum.Health = DesiredHP
+    hum.MaxHealth = DesiredHP
+end
+
+if LocalPlayer.Character then bindChar(LocalPlayer.Character) end
+LocalPlayer.CharacterAdded:Connect(bindChar)
+
+-- HP適用
+hpButton.MouseButton1Click:Connect(function()
+    local n = tonumber(hpBox.Text)
+    if n then DesiredHP = math.clamp(n,1,9999) end
+end)
+
+-- God Mode切替
+godToggle.MouseButton1Click:Connect(function()
+    GodMode = not GodMode
+    godToggle.Text = "God Mode : " .. (GodMode and "ON" or "OFF")
+end)
+
+-- Heartbeatで常に回復
+RunService.Heartbeat:Connect(function()
+    if hum then
+        if GodMode and hum.Health < DesiredHP then
+            hum.Health = DesiredHP
+        end
+    end
+end)
