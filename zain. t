@@ -1,0 +1,98 @@
+-- Services
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local TeleportCheck = false
+local queueTeleport = syn and syn.queue_on_teleport or queue_on_teleport
+
+-- HyperShot本体URL
+local MOBILE_URL = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HyperShotMobiles.lua"
+local PC_URL     = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HypershotPc.lua"
+
+-- HP/GUI 設定
+local DesiredHP = 100
+local GodMode = false
+
+-- ===== UI =====
+do
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "HP_UI"
+    gui.ResetOnSpawn = false
+    gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.fromScale(0.26, 0.28)
+    frame.Position = UDim2.fromScale(0.05, 0.6)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+
+    local hpBox = Instance.new("TextBox", frame)
+    hpBox.Size = UDim2.fromScale(0.8,0.25)
+    hpBox.Position = UDim2.fromScale(0.1,0.05)
+    hpBox.PlaceholderText = "HP入力"
+    hpBox.Text = ""
+
+    local hpButton = Instance.new("TextButton", frame)
+    hpButton.Size = UDim2.fromScale(0.5,0.2)
+    hpButton.Position = UDim2.fromScale(0.25,0.35)
+    hpButton.Text = "適用"
+
+    local godToggle = Instance.new("TextButton", frame)
+    godToggle.Size = UDim2.fromScale(0.85,0.2)
+    godToggle.Position = UDim2.fromScale(0.075,0.65)
+    godToggle.Text = "God Mode : OFF"
+
+    hpButton.MouseButton1Click:Connect(function()
+        local n = tonumber(hpBox.Text)
+        if n then DesiredHP = math.clamp(n,1,9999) end
+    end)
+
+    godToggle.MouseButton1Click:Connect(function()
+        GodMode = not GodMode
+        godToggle.Text = "God Mode : " .. (GodMode and "ON" or "OFF")
+    end)
+end
+
+-- ===== HyperShot実行関数 =====
+local function getURL()
+    if UserInputService.TouchEnabled then return MOBILE_URL
+    else return PC_URL end
+end
+
+local function executeScript()
+    loadstring(game:HttpGet(getURL()))()
+end
+
+executeScript()
+
+-- ===== Teleport Queue =====
+LocalPlayer.OnTeleport:Connect(function()
+    if not TeleportCheck and queueTeleport then
+        TeleportCheck = true
+        queueTeleport(string.format("loadstring(game:HttpGet(%q))()",getURL()))
+    end
+end)
+
+TeleportService.TeleportInitFailed:Connect(function(player)
+    if player == LocalPlayer and queueTeleport then
+        queueTeleport(string.format("loadstring(game:HttpGet(%q))()",getURL()))
+    end
+end)
+
+-- ===== HyperShot専用HP/GodMode監視 =====
+local function bindChar(char)
+    local hum = char:WaitForChild("Humanoid")
+    local root = char:WaitForChild("HumanoidRootPart")
+
+    RunService.Heartbeat:Connect(function()
+        if GodMode and hum.Health < DesiredHP then
+            hum.Health = DesiredHP
+        end
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(bindChar)
+if LocalPlayer.Character then bindChar(LocalPlayer.Character) end
