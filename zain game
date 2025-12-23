@@ -1,0 +1,59 @@
+-- Services
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local TeleportCheck = false
+
+-- queue_on_teleport を安全に取得（存在すれば使う）
+local queueTeleport
+pcall(function()
+	queueTeleport =
+		(queue_on_teleport)
+		or (syn and syn.queue_on_teleport)
+		or (getgenv and getgenv().queue_on_teleport)
+end)
+
+-- 実行対象URL
+local MOBILE_URL = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HyperShotMobiles.lua"
+local PC_URL     = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HypershotPc.lua"
+
+local function getScriptURL()
+	if UserInputService.TouchEnabled then
+		return MOBILE_URL
+	else
+		return PC_URL
+	end
+end
+
+local function executeScript()
+	local url = getScriptURL()
+	loadstring(game:HttpGet(url))()
+end
+
+-- 初回実行
+executeScript()
+
+-- Teleport 継続
+LocalPlayer.OnTeleport:Connect(function()
+	if TeleportCheck then return end
+	if not queueTeleport then return end
+
+	TeleportCheck = true
+	queueTeleport(string.format(
+		"loadstring(game:HttpGet(%q))()",
+		getScriptURL()
+	))
+end)
+
+-- Teleport失敗時
+TeleportService.TeleportInitFailed:Connect(function(player)
+	if player ~= LocalPlayer then return end
+	if not queueTeleport then return end
+
+	queueTeleport(string.format(
+		"loadstring(game:HttpGet(%q))()",
+		getScriptURL()
+	))
+end)
