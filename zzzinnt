@@ -1,0 +1,134 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local LocalPlayer = Players.LocalPlayer
+local queueTeleport = syn and syn.queue_on_teleport or queue_on_teleport
+
+-- Settings
+local GodMode = false
+local TargetHP = 100
+
+-- ===== UI =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "ZEPHYR_UI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromScale(0.28,0.28)
+frame.Position = UDim2.fromScale(0.05,0.6)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+
+-- HP入力
+local hpBox = Instance.new("TextBox", frame)
+hpBox.Size = UDim2.fromScale(0.8,0.25)
+hpBox.Position = UDim2.fromScale(0.1,0.05)
+hpBox.PlaceholderText = "Target HP"
+hpBox.Text = ""
+
+local hpButton = Instance.new("TextButton", frame)
+hpButton.Size = UDim2.fromScale(0.5,0.2)
+hpButton.Position = UDim2.fromScale(0.25,0.35)
+hpButton.Text = "適用"
+
+-- GodModeトグル
+local godToggle = Instance.new("TextButton", frame)
+godToggle.Size = UDim2.fromScale(0.85,0.2)
+godToggle.Position = UDim2.fromScale(0.075,0.65)
+godToggle.Text = "GodMode : OFF"
+
+-- UI最小化ボタン
+local minBtn = Instance.new("TextButton", frame)
+minBtn.Size = UDim2.fromScale(0.15,0.15)
+minBtn.Position = UDim2.fromScale(0.825,0)
+minBtn.Text = "_"
+minBtn.TextScaled = true
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    frame.Size = minimized and UDim2.fromScale(0.05,0.05) or UDim2.fromScale(0.28,0.28)
+end)
+
+-- ===== UI移動（右クリックドラッグ） =====
+do
+    local dragging = false
+    local dragOffset = Vector2.new(0,0)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            dragging = true
+            local mousePos = UserInputService:GetMouseLocation()
+            dragOffset = Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
+        end
+    end)
+    frame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            dragging = false
+        end
+    end)
+    RunService.RenderStepped:Connect(function()
+        if dragging then
+            local mousePos = UserInputService:GetMouseLocation()
+            frame.Position = UDim2.new(0, mousePos.X - dragOffset.X, 0, mousePos.Y - dragOffset.Y)
+        end
+    end)
+end
+
+-- ===== UIイベント =====
+hpButton.MouseButton1Click:Connect(function()
+    local n = tonumber(hpBox.Text)
+    if n and n > 0 then TargetHP = math.clamp(n,1,9999) end
+end)
+
+godToggle.MouseButton1Click:Connect(function()
+    GodMode = not GodMode
+    godToggle.Text = "GodMode : " .. (GodMode and "ON" or "OFF")
+end)
+
+-- ===== HP/GodMode監視 =====
+local function bindChar(char)
+    local hum = char:WaitForChild("Humanoid")
+    hum.MaxHealth = TargetHP
+    hum.Health = TargetHP
+
+    -- Heartbeat と HealthChanged で即常時回復
+    RunService.Heartbeat:Connect(function()
+        if GodMode then hum.Health = TargetHP end
+    end)
+    hum.HealthChanged:Connect(function(newHp)
+        if GodMode then hum.Health = TargetHP end
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(bindChar)
+if LocalPlayer.Character then bindChar(LocalPlayer.Character) end
+
+-- ===== HyperShot ローダー呼び出し =====
+local MOBILE_URL = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HyperShotMobiles.lua"
+local PC_URL = "https://raw.githubusercontent.com/TheRealAvrwm/Zephyr-V2/main/Games/HypershotPc.lua"
+
+local function getURL()
+    if UserInputService.TouchEnabled then return MOBILE_URL
+    else return PC_URL end
+end
+
+local function executeHyperShot()
+    loadstring(game:HttpGet(getURL()))()
+end
+
+executeHyperShot()
+
+-- ===== Teleport対応 =====
+LocalPlayer.OnTeleport:Connect(function()
+    if queueTeleport then
+        queueTeleport(string.format("loadstring(game:HttpGet(%q))()",getURL()))
+    end
+end)
+
+TeleportService.TeleportInitFailed:Connect(function(player)
+    if player == LocalPlayer and queueTeleport then
+        queueTeleport(string.format("loadstring(game:HttpGet(%q))()",getURL()))
+    end
+end)
