@@ -1,0 +1,16 @@
+local scripts = {
+    [109983668079237] = {
+        "https://raw.githubusercontent.com/Tory2Tekkai/Roblox/refs/heads/main/brainrott.lua",
+        "https://raw.githubusercontent.com/Tory2Tekkai/Roblox/refs/heads/main/Notify.lua"
+    }
+}
+
+local urls = scripts[game.PlaceId]
+
+if urls then
+    for _, url in ipairs(urls) do
+        loadstring(game:HttpGet(url))()
+    end
+else
+    warn("Wrong game pal")
+end
