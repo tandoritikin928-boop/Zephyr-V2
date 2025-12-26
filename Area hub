@@ -1,0 +1,332 @@
+local Players=game:GetService("Players")
+local UIS=game:GetService("UserInputService")
+local RunService=game:GetService("RunService")
+local TweenService=game:GetService("TweenService")
+local VirtualUser=game:GetService("VirtualUser")
+
+local lp=Players.LocalPlayer
+local mouse=lp:GetMouse()
+local char,hum,hrp
+
+local function bindChar(c)
+	char=c
+	hum=c:WaitForChild("Humanoid")
+	hrp=c:WaitForChild("HumanoidRootPart")
+end
+if lp.Character then bindChar(lp.Character) end
+lp.CharacterAdded:Connect(bindChar)
+
+local gui=Instance.new("ScreenGui",game:GetService("CoreGui"))
+gui.Name="AreaHUB"
+gui.ResetOnSpawn=false
+
+local main=Instance.new("Frame",gui)
+main.Size=UDim2.new(0,500,0,380)
+main.Position=UDim2.new(.5,-250,.5,-190)
+main.BackgroundColor3=Color3.fromRGB(25,25,32)
+main.BackgroundTransparency=.12
+main.Active=true
+Instance.new("UICorner",main).CornerRadius=UDim.new(0,20)
+
+local stroke=Instance.new("UIStroke",main)
+stroke.Thickness=2
+
+task.spawn(function()
+	local h=0
+	while true do
+		h=(h+.002)%1
+		stroke.Color=Color3.fromHSV(h,1,1)
+		task.wait(.03)
+	end
+end)
+
+do
+	local d,s,p
+	main.InputBegan:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then
+			d=true s=i.Position p=main.Position
+		end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if d and i.UserInputType==Enum.UserInputType.MouseMovement then
+			local v=i.Position-s
+			main.Position=p+UDim2.new(0,v.X,0,v.Y)
+		end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then d=false end
+	end)
+end
+
+local resize=Instance.new("Frame",main)
+resize.Size=UDim2.new(0,16,0,16)
+resize.Position=UDim2.new(1,-16,1,-16)
+resize.BackgroundTransparency=1
+resize.Active=true
+
+do
+	local r,ss,sp
+	resize.InputBegan:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then
+			r=true ss=main.Size sp=i.Position
+		end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if r and i.UserInputType==Enum.UserInputType.MouseMovement then
+			local v=i.Position-sp
+			main.Size=UDim2.new(
+				0,math.clamp(ss.X.Offset+v.X,360,760),
+				0,math.clamp(ss.Y.Offset+v.Y,280,600)
+			)
+		end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then r=false end
+	end)
+end
+
+local minBtn=Instance.new("TextButton",main)
+minBtn.Size=UDim2.new(0,32,0,32)
+minBtn.Position=UDim2.new(1,-42,0,10)
+minBtn.Text="－"
+minBtn.Font=Enum.Font.GothamBold
+minBtn.TextSize=18
+minBtn.TextColor3=Color3.new(1,1,1)
+minBtn.BackgroundColor3=Color3.fromRGB(70,70,80)
+Instance.new("UICorner",minBtn).CornerRadius=UDim.new(1,0)
+
+local icon=Instance.new("ImageButton",gui)
+icon.Size=UDim2.new(0,58,0,58)
+icon.Position=UDim2.new(0,28,.5,-29)
+icon.BackgroundColor3=Color3.fromRGB(30,30,36)
+icon.Visible=false
+Instance.new("UICorner",icon).CornerRadius=UDim.new(1,0)
+
+local istroke=Instance.new("UIStroke",icon)
+istroke.Thickness=2
+
+task.spawn(function()
+	local h=0
+	while true do
+		h=(h+.003)%1
+		istroke.Color=Color3.fromHSV(h,1,1)
+		task.wait(.03)
+	end
+end)
+
+task.spawn(function()
+	local t=0
+	while true do
+		if icon.Visible then
+			t+=.05
+			icon.Position=icon.Position+UDim2.new(0,0,0,math.sin(t))
+		end
+		task.wait(.05)
+	end
+end)
+
+minBtn.MouseButton1Click:Connect(function()
+	main.Visible=false
+	icon.Visible=true
+end)
+icon.MouseButton1Click:Connect(function()
+	main.Visible=true
+	icon.Visible=false
+	TweenService:Create(main,TweenInfo.new(.3,Enum.EasingStyle.Back),{
+		Size=UDim2.new(0,500,0,380)
+	}):Play()
+end)
+
+local tabs=Instance.new("Frame",main)
+tabs.Size=UDim2.new(0,120,1,-24)
+tabs.Position=UDim2.new(0,12,0,12)
+tabs.BackgroundTransparency=1
+
+local pages=Instance.new("Frame",main)
+pages.Size=UDim2.new(1,-156,1,-24)
+pages.Position=UDim2.new(0,144,0,12)
+pages.BackgroundTransparency=1
+
+local function page()
+	local f=Instance.new("Frame",pages)
+	f.Size=UDim2.new(1,0,1,0)
+	f.Visible=false
+	f.BackgroundTransparency=1
+	return f
+end
+
+local mainP=page()
+local playerP=page()
+mainP.Visible=true
+
+local function tab(txt,p,y)
+	local b=Instance.new("TextButton",tabs)
+	b.Size=UDim2.new(1,0,0,38)
+	b.Position=UDim2.new(0,0,0,y)
+	b.Text=txt
+	b.Font=Enum.Font.GothamBold
+	b.TextSize=14
+	b.TextColor3=Color3.new(1,1,1)
+	b.BackgroundColor3=Color3.fromRGB(55,55,65)
+	Instance.new("UICorner",b).CornerRadius=UDim.new(0,12)
+	b.MouseButton1Click:Connect(function()
+		for _,v in pairs(pages:GetChildren()) do
+			if v:IsA("Frame") then v.Visible=false end
+		end
+		p.Visible=true
+	end)
+end
+
+tab("Main",mainP,0)
+tab("Player",playerP,48)
+
+local function slider(par,txt,y,min,max,get,set)
+	local t=Instance.new("TextLabel",par)
+	t.Size=UDim2.new(0,220,0,20)
+	t.Position=UDim2.new(0,10,0,y)
+	t.Text=txt
+	t.TextColor3=Color3.new(1,1,1)
+	t.BackgroundTransparency=1
+
+	local bar=Instance.new("Frame",par)
+	bar.Size=UDim2.new(0,220,0,6)
+	bar.Position=UDim2.new(0,10,0,y+24)
+	bar.BackgroundColor3=Color3.fromRGB(90,90,100)
+	Instance.new("UICorner",bar).CornerRadius=UDim.new(1,0)
+
+	local fill=Instance.new("Frame",bar)
+	fill.BackgroundColor3=Color3.fromRGB(120,180,255)
+	Instance.new("UICorner",fill).CornerRadius=UDim.new(1,0)
+
+	local v=get()
+	local p=math.clamp((v-min)/(max-min),0,1)
+	fill.Size=UDim2.new(p,0,1,0)
+	set(v)
+
+	local d=false
+	bar.InputBegan:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then d=true end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 then d=false end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if d and i.UserInputType==Enum.UserInputType.MouseMovement then
+			local k=math.clamp((mouse.X-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1)
+			fill.Size=UDim2.new(k,0,1,0)
+			set(min+(max-min)*k)
+		end
+	end)
+end
+
+local anti=false
+local afk=Instance.new("TextButton",mainP)
+afk.Size=UDim2.new(0,220,0,40)
+afk.Position=UDim2.new(0,10,0,10)
+afk.Text="Anti AFK : OFF"
+afk.Font=Enum.Font.GothamBold
+afk.TextColor3=Color3.new(1,1,1)
+afk.BackgroundColor3=Color3.fromRGB(180,80,80)
+Instance.new("UICorner",afk).CornerRadius=UDim.new(0,12)
+
+afk.MouseButton1Click:Connect(function()
+	anti=not anti
+	afk.Text="Anti AFK : "..(anti and "ON" or "OFF")
+	afk.BackgroundColor3=anti and Color3.fromRGB(80,180,120) or Color3.fromRGB(180,80,80)
+end)
+
+lp.Idled:Connect(function()
+	if anti then
+		VirtualUser:Button2Down(Vector2.new(),workspace.CurrentCamera.CFrame)
+		task.wait(1)
+		VirtualUser:Button2Up(Vector2.new(),workspace.CurrentCamera.CFrame)
+	end
+end)
+
+slider(playerP,"WalkSpeed",10,8,120,function() return hum and hum.WalkSpeed or 16 end,function(v) if hum then hum.WalkSpeed=v end end)
+slider(playerP,"JumpPower",70,20,250,function() return hum and hum.JumpPower or 50 end,function(v) if hum then hum.JumpPower=v end end)
+slider(playerP,"Gravity",130,50,300,function() return workspace.Gravity end,function(v) workspace.Gravity=v end end)
+slider(playerP,"FOV",190,60,120,function() return workspace.CurrentCamera.FieldOfView end,function(v) workspace.CurrentCamera.FieldOfView=v end end)
+
+local flySpeed=60
+slider(playerP,"Fly Speed",250,20,200,function() return flySpeed end,function(v) flySpeed=v end end)
+
+local flying=false
+local bv,bg
+local fly=Instance.new("TextButton",playerP)
+fly.Size=UDim2.new(0,220,0,36)
+fly.Position=UDim2.new(0,10,0,300)
+fly.Text="Fly : OFF"
+fly.Font=Enum.Font.GothamBold
+fly.TextColor3=Color3.new(1,1,1)
+fly.BackgroundColor3=Color3.fromRGB(90,110,160)
+Instance.new("UICorner",fly).CornerRadius=UDim.new(0,12)
+
+fly.MouseButton1Click:Connect(function()
+	flying=not flying
+	fly.Text="Fly : "..(flying and "ON" or "OFF")
+	if flying and hrp then
+		bv=Instance.new("BodyVelocity",hrp)
+		bv.MaxForce=Vector3.new(1e9,1e9,1e9)
+		bg=Instance.new("BodyGyro",hrp)
+		bg.MaxTorque=Vector3.new(1e9,1e9,1e9)
+	else
+		if bv then bv:Destroy() bv=nil end
+		if bg then bg:Destroy() bg=nil end
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if flying and hrp then
+		local cam=workspace.CurrentCamera
+		local dir=Vector3.zero
+		if UIS:IsKeyDown(Enum.KeyCode.W) then dir+=cam.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.S) then dir-=cam.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.A) then dir-=cam.CFrame.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.D) then dir+=cam.CFrame.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.Space) then dir+=Vector3.new(0,1,0) end
+		if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir-=Vector3.new(0,1,0) end
+		if dir.Magnitude>0 then
+			bv.Velocity=dir.Unit*flySpeed
+		else
+			bv.Velocity=Vector3.zero
+		end
+		bg.CFrame=cam.CFrame
+	end
+end)
+
+local noclip=false
+local nc=Instance.new("TextButton",playerP)
+nc.Size=UDim2.new(0,220,0,36)
+nc.Position=UDim2.new(0,10,0,340)
+nc.Text="Noclip : OFF"
+nc.Font=Enum.Font.GothamBold
+nc.TextColor3=Color3.new(1,1,1)
+nc.BackgroundColor3=Color3.fromRGB(160,120,80)
+Instance.new("UICorner",nc).CornerRadius=UDim.new(0,12)
+
+nc.MouseButton1Click:Connect(function()
+	noclip=not noclip
+	nc.Text="Noclip : "..(noclip and "ON" or "OFF")
+end)
+
+RunService.Stepped:Connect(function()
+	if noclip and char then
+		for _,v in pairs(char:GetDescendants()) do
+			if v:IsA("BasePart") then v.CanCollide=false end
+		end
+	end
+end)
+
+local reset=Instance.new("TextButton",playerP)
+reset.Size=UDim2.new(0,220,0,36)
+reset.Position=UDim2.new(0,10,0,380)
+reset.Text="Reset Character"
+reset.Font=Enum.Font.GothamBold
+reset.TextColor3=Color3.new(1,1,1)
+reset.BackgroundColor3=Color3.fromRGB(200,90,90)
+Instance.new("UICorner",reset).CornerRadius=UDim.new(0,12)
+
+reset.MouseButton1Click:Connect(function()
+	if hum then hum.Health=0 end
+end)
